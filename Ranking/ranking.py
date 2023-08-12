@@ -3,6 +3,7 @@ import numpy as np
 import dgl
 import pickle
 from torch.utils.data import DataLoader
+from scipy.spatial import distance
 
 class Ranking:
     def __init__(self, GRAPH_PATH, MODEL_PATHS):
@@ -64,12 +65,20 @@ class Ranking:
             model = self.GAT_model.to(device)
         
         model.eval()
-        probabilities = torch.softmax(model(g.to(device)), 1).tolist()[0]
+        result_cluster = np.argmax(torch.softmax(model(g.to(device)), 1).tolist()[0])
+
         ranking_result = []
+
+        if self.num_speakers == 2:
+            if dialog["speaker"][-1] == 0:
+                cluster_center = self.clusters.system_mean_emb[result_cluster]
+            else:
+                cluster_center = self.clusters.user_mean_emb[result_cluster]
+        else:
+            cluster_center = self.clusters.mean_emb[result_cluster]
         
         for next_utterance in next_utterances:
-            cluster, _ = self.clusters.utterance_cluster_search(next_utterance, 1 - dialog["speaker"][-1])
+            utterance_embedding = self.clusters.encoder_model.encode(next_utterance)
+            ranking_result.append((next_utterance, distance.euclidean(utterance_embedding, cluster_center)))
             
-            ranking_result.append((next_utterance, probabilities[cluster]))
-            
-        return sorted(ranking_result, key = lambda x: -x[1])
+        return sorted(ranking_result, key = lambda x: x[1])
