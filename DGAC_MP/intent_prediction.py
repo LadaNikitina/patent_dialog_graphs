@@ -41,7 +41,7 @@ class IntentPredictor:
         self.clusters.form_clusters()
     
     def dump_dialog_graph(self, PATH):
-        pickle.dump(self.clusters, open(PATH + "dialog_graph", "wb"))
+        pickle.dump(self.clusters, open(PATH, "wb"))
 
     def one_partite_dgl_graphs_preprocessing(self):
         train_x, train_y = get_data_one_speaker(self.clusters.train_dataset, self.top_k, self.second_stage_num_clusters, 
